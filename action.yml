@@ -1,6 +1,9 @@
 name: 'Query an organisations repositories for any repo containing a tag'
 description: 'Useful within corporate environment when mass managing repos'
 author: 'echapmanFromBunnings'
+branding:
+  icon: 'archive'
+  color: 'green'
 inputs:
   repo-owner:
     description: 'Account to search under. This is to narrow the search down as there is a 1000 limit by GitHub'
