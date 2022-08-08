@@ -1,0 +1,69 @@
+name: 'Query an organisations repositories for any repo containing a tag'
+description: 'Useful within corporate environment when mass managing repos'
+author: 'echapmanFromBunnings'
+inputs:
+  repo-owner:
+    description: 'Account to search under. This is to narrow the search down as there is a 1000 limit by GitHub'
+    required: true
+  repo-token:
+    description: 'Token for the repository. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
+    required: true
+  topic-filter:
+    description: 'Topic to query the repositories by'
+    required: true
+
+outputs:
+  repojson:
+    description: 'contains the repos in a json format for consuming by a workflow matrix'
+    value: ${{ steps.get-repo.outputs.repojson }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: get repos
+      id: get-repo
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.repo-token }}
+        debug: true
+        result-encoding: 'json'
+        script: |
+          var counter = 0;
+          var { data: repositories } = await github.rest.search.repos({
+            q: '${{inputs.topic-filter}}+in:topics+user:${{inputs.repo-owner}}',
+            per_page: 100,
+            page: counter
+          });
+
+          console.log("found "+ repositories.total_count + " repo(s)")
+
+          var foundRepos = [];
+          while (true){
+            repositories.items.forEach(function(repo){
+              const shortRepo = {
+                owner: "${{inputs.repo-owner}}",
+                name: repo.name
+              };
+              foundRepos.push(shortRepo)
+            })
+
+            console.log(repositories.incomplete_results)
+
+            if(repositories.incomplete_results === true){
+              counter = counter+1;
+              repositories = (await github.rest.search.repos({
+                q: '${{inputs.topic-filter}}+in:topics+user:${{inputs.repo-owner}}',
+                per_page: 100,
+                page: counter
+              })).data;
+
+              console.log("found "+ repositories.total_count + " repo(s)")
+              console.log("iterating again...")
+            }else{
+              console.log("no repos left")
+              break;
+            }
+          }
+
+          console.log(foundRepos)
+          core.setOutput('repojson', foundRepos);
