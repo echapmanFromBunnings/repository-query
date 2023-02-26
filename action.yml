@@ -31,15 +31,15 @@ runs:
         debug: true
         result-encoding: 'json'
         script: |
-          var counter = 0;
+          var counter = 1;
           var { data: repositories } = await github.rest.search.repos({
             q: '${{inputs.topic-filter}}+in:topics+user:${{inputs.repo-owner}}',
             per_page: 100,
             page: counter
           });
+
           console.log("found "+ repositories.total_count + " repo(s)")
-          const totalToProcess = repositories.total_count;
-          let processedCount = 0;
+
           var foundRepos = [];
           while (true){
             repositories.items.forEach(function(repo){
@@ -49,14 +49,17 @@ runs:
               };
               foundRepos.push(shortRepo)
             })
-            processedCount += repositories.items.length          
-            if(processedCount < totalToProcess){
-              counter++;
+
+            console.log(repositories.incomplete_results)
+
+            if(repositories.incomplete_results === true){
+              counter = counter+1;
               repositories = (await github.rest.search.repos({
                 q: '${{inputs.topic-filter}}+in:topics+user:${{inputs.repo-owner}}',
                 per_page: 100,
                 page: counter
               })).data;
+
               console.log("found "+ repositories.total_count + " repo(s)")
               console.log("iterating again...")
             }else{
@@ -64,5 +67,6 @@ runs:
               break;
             }
           }
+
           console.log(foundRepos)
           core.setOutput('repojson', foundRepos);
