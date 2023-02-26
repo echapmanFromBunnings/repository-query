@@ -5,7 +5,7 @@ Action provides details back in a format that works with a [matrix](https://docs
 that can work with other processes I've listed [here](https://medium.com/@ericchap/how-to-centralize-your-workflow-management-in-github-4ee49283790c)
 
 ```
-- uses: echapmanFromBunnings/repository-query@v1
+- uses: echapmanFromBunnings/repository-query@v1.3
   id: get-repos
   with:
     repo-owner: 'echapmanFromBunnings'

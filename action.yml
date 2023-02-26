@@ -40,27 +40,34 @@ runs:
 
           console.log("found "+ repositories.total_count + " repo(s)")
 
+          const totalToProcess = repositories.total_count;
+
+          let processedCount = 0;
           var foundRepos = [];
+
           while (true){
-            repositories.items.forEach(function(repo){
+            for(const repo of repositories.items){
               const shortRepo = {
                 owner: "${{inputs.repo-owner}}",
                 name: repo.name
               };
-              foundRepos.push(shortRepo)
-            })
+              foundRepos.push(shortRepo);
+            }
 
-            console.log(repositories.incomplete_results)
+            processedCount += repositories.items.length      
 
-            if(repositories.incomplete_results === true){
-              counter = counter+1;
+            console.log(`processed is ${processedCount} and total is ${totalToProcess} and counter is ${counter}`)
+
+            if(processedCount < totalToProcess){
+              counter++;
+
               repositories = (await github.rest.search.repos({
                 q: '${{inputs.topic-filter}}+in:topics+user:${{inputs.repo-owner}}',
                 per_page: 100,
                 page: counter
               })).data;
 
-              console.log("found "+ repositories.total_count + " repo(s)")
+              console.log((repositories.total_count - processedCount) + " repo(s) to go")
               console.log("iterating again...")
             }else{
               console.log("no repos left")
@@ -68,5 +75,15 @@ runs:
             }
           }
 
-          console.log(foundRepos)
-          core.setOutput('repojson', foundRepos);
+          console.log(`pre-clean - ${foundRepos.length} repos`)
+          console.log('cleaning up results for uniqueness')
+          
+          const uniqueRepos = foundRepos.filter((obj, index, self) =>
+            index === self.findIndex((t) => (
+              t.name === obj.name
+            ))
+          );
+          
+          console.log(`outputting ${uniqueRepos.length} repos to results`)
+          
+          core.setOutput('repojson', uniqueRepos);
